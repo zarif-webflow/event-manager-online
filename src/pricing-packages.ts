@@ -11,8 +11,8 @@ const initPricingPackages = () => {
 
   if (!pricingPackageWrap) return;
 
-  const billedYearlyTexts = getMultipleHtmlElements({
-    selector: "[pricing-package=billed-yearly-text]",
+  const yearlyOnlyElements = getMultipleHtmlElements({
+    selector: "[pricing-package=yearly-only-element]",
     parent: pricingPackageWrap,
   });
 
@@ -39,25 +39,25 @@ const initPricingPackages = () => {
   });
 
   const teamsUserRangeInput = getHtmlElement({
-    selector: "div",
+    selector: "input[type=range]",
     log: "error",
     parent: pricingPackageWrap,
   });
   const teamsTotalPriceEl = getHtmlElement({
-    selector: "div",
+    selector: "[pricing-package=teams-total-price]",
     parent: pricingPackageWrap,
     log: "error",
   });
-  //   const teamsUserRangeInput = getHtmlElement({
-  //     selector: "input[type=range]",
-  //     log: "error",
-  //     parent: pricingPackageWrap,
-  //   });
-  //   const teamsTotalPriceEl = getHtmlElement({
-  //     selector: "[pricing-package=teams-total-price]",
-  //     parent: pricingPackageWrap,
-  //     log: "error",
-  //   });
+  const teamsSelectedUserNumberEl = getHtmlElement({
+    selector: "[pricing-package=selected-user-number]",
+    parent: pricingPackageWrap,
+    log: "error",
+  });
+  const teamsTotalPriceBreakdownEl = getHtmlElement({
+    selector: "[pricing-package=price-breakdown]",
+    parent: pricingPackageWrap,
+    log: "error",
+  });
 
   const packageTimeToggler = getHtmlElement({
     selector: "[pricing-package=time-toggler]",
@@ -73,7 +73,9 @@ const initPricingPackages = () => {
     !teamsUserRangeInput ||
     !teamsTotalPriceEl ||
     !packageTimeToggler ||
-    !billedYearlyTexts
+    !yearlyOnlyElements ||
+    !teamsTotalPriceBreakdownEl ||
+    !teamsSelectedUserNumberEl
   ) {
     console.error("Missing pricing packages elements");
     return;
@@ -85,8 +87,11 @@ const initPricingPackages = () => {
   const yearlySavePercentageStr = pricingPackageWrap.getAttribute("yearly-save-percentage") || "";
   const yearlySavePercentage = Number.parseFloat(yearlySavePercentageStr);
 
+  const pricePerExtraUserStr = pricingPackageWrap.getAttribute("price-per-extra-user") || "";
+  const pricePerExtraUser = Number.parseFloat(pricePerExtraUserStr);
+
   let isYearlyToggled = false;
-  const defaultNumberOfUsers = 1;
+  let currentSelectedUsers = 1;
   const maxNumberOfUsers = Number.parseInt(
     pricingPackageWrap.getAttribute("max-number-of-users") || ""
   );
@@ -95,14 +100,14 @@ const initPricingPackages = () => {
     Number.isNaN(standardPricing) ||
     Number.isNaN(teamsPricing) ||
     Number.isNaN(yearlySavePercentage) ||
-    Number.isNaN(maxNumberOfUsers)
+    Number.isNaN(maxNumberOfUsers) ||
+    Number.isNaN(pricePerExtraUser)
   ) {
     console.error("Missing or invalid pricing packages numeric data");
     return;
   }
 
   const standardPricingYearlySave = standardPricing * (yearlySavePercentage / 100) * 12;
-  const teamsPricingYearlySave = teamsPricing * (yearlySavePercentage / 100) * 12;
 
   const standardPricingYearly = standardPricing - standardPricing * (yearlySavePercentage / 100);
   const teamsPricingYearly = teamsPricing - teamsPricing * (yearlySavePercentage / 100);
@@ -111,10 +116,10 @@ const initPricingPackages = () => {
     standardPricingEl.textContent = formatPrice(standardPricingYearly);
     standardPriceSaveEl.textContent = formatPrice(standardPricingYearlySave);
     teamsPricingEl.textContent = formatPrice(teamsPricingYearly);
-    teamsPriceSaveEl.textContent = formatPrice(teamsPricingYearlySave);
+    // teamsPriceSaveEl.textContent = formatPrice(teamsPricingYearlySave);
 
-    billedYearlyTexts.forEach((textEl) => {
-      textEl.style.display = "block";
+    yearlyOnlyElements.forEach((element) => {
+      element.style.display = "block";
     });
   };
 
@@ -122,9 +127,38 @@ const initPricingPackages = () => {
     standardPricingEl.textContent = formatPrice(standardPricing);
     teamsPricingEl.textContent = formatPrice(teamsPricing);
 
-    billedYearlyTexts.forEach((textEl) => {
-      textEl.style.display = "none";
+    yearlyOnlyElements.forEach((element) => {
+      element.style.display = "none";
     });
+  };
+
+  const setUserValue = (userNumber: number) => {
+    teamsSelectedUserNumberEl.textContent = `${userNumber}`;
+
+    if (userNumber > 1) {
+      teamsTotalPriceBreakdownEl.style.display = "block";
+    } else {
+      teamsTotalPriceBreakdownEl.style.display = "none";
+    }
+
+    if (isYearlyToggled) {
+      const teamsTotalPriceWithoutDiscount = teamsPricing + pricePerExtraUser * (userNumber - 1);
+
+      const teamsPriceWithDiscount =
+        teamsTotalPriceWithoutDiscount -
+        teamsTotalPriceWithoutDiscount * (yearlySavePercentage / 100);
+
+      teamsTotalPriceEl.textContent = `${formatPrice(teamsPriceWithDiscount)}`;
+
+      teamsTotalPriceBreakdownEl.textContent = `(Basic €${formatPrice(teamsPricingYearly)} + ${userNumber - 1} x €${formatPrice(pricePerExtraUser - pricePerExtraUser * (yearlySavePercentage / 100))})`;
+
+      teamsPriceSaveEl.textContent = formatPrice(
+        teamsTotalPriceWithoutDiscount * (yearlySavePercentage / 100) * 12
+      );
+    } else {
+      teamsTotalPriceEl.textContent = `${formatPrice(teamsPricing + pricePerExtraUser * (userNumber - 1))}`;
+      teamsTotalPriceBreakdownEl.textContent = `(Basic €${formatPrice(teamsPricing)} + ${userNumber - 1} x €${formatPrice(pricePerExtraUser)})`;
+    }
   };
 
   packageTimeToggler.addEventListener("click", () => {
@@ -134,10 +168,19 @@ const initPricingPackages = () => {
       showYearly();
     }
     isYearlyToggled = !isYearlyToggled;
+
+    setUserValue(currentSelectedUsers);
   });
 
-  showYearly();
   isYearlyToggled = true;
+  showYearly();
+  setUserValue(currentSelectedUsers);
+
+  teamsUserRangeInput.addEventListener("input", (event) => {
+    const userNumber = Number.parseInt((event.target as HTMLInputElement).value);
+    currentSelectedUsers = userNumber;
+    setUserValue(userNumber);
+  });
 };
 
 afterWebflowReady(() => {
