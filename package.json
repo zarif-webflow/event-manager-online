@@ -1,6 +1,6 @@
 {
-  "name": "z-wf-starter",
-  "description": "Starter template that I use for all my Webflow projects.",
+  "name": "event-manager-online",
+  "description": "Event Manager Online Webflow Scripts",
   "license": "ISC",
   "keywords": [],
   "type": "module",
