@@ -11,15 +11,15 @@ const initPricingPackages = () => {
 
   if (!pricingPackageWrap) return;
 
-  const yearlyOnlyElements = getMultipleHtmlElements({
-    selector: "[pricing-package=yearly-only-element]",
-    parent: pricingPackageWrap,
-  });
+  const yearlyOnlyElements =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=yearly-only-element]",
+    }) || [];
 
-  const monthlyOnlyElements = getMultipleHtmlElements({
-    selector: "[pricing-package=monthly-only-element]",
-    parent: pricingPackageWrap,
-  });
+  const monthlyOnlyElements =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=monthly-only-element]",
+    }) || [];
 
   const standardPricingEl = getHtmlElement({
     selector: "[pricing-package=standard-price]",
@@ -48,16 +48,16 @@ const initPricingPackages = () => {
     log: "error",
     parent: pricingPackageWrap,
   });
-  const teamsTotalPriceEl = getHtmlElement({
-    selector: "[pricing-package=teams-total-price]",
-    parent: pricingPackageWrap,
-    log: "error",
-  });
-  const teamsSelectedUserNumberEl = getHtmlElement({
-    selector: "[pricing-package=selected-user-number]",
-    parent: pricingPackageWrap,
-    log: "error",
-  });
+  const teamsTotalPriceEl =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=teams-total-price]",
+      log: "error",
+    }) || [];
+  const teamsSelectedUserNumberEl =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=selected-user-number]",
+      log: "error",
+    }) || [];
   const teamsTotalPriceBreakdownEl = getHtmlElement({
     selector: "[pricing-package=price-breakdown]",
     parent: pricingPackageWrap,
@@ -146,7 +146,9 @@ const initPricingPackages = () => {
   };
 
   const setUserValue = (userNumber: number) => {
-    teamsSelectedUserNumberEl.textContent = `${userNumber}`;
+    teamsSelectedUserNumberEl.forEach((element) => {
+      element.textContent = `${userNumber}`;
+    });
 
     if (userNumber > 1) {
       teamsTotalPriceBreakdownEl.style.display = "block";
@@ -160,8 +162,10 @@ const initPricingPackages = () => {
       const teamsPriceWithDiscount =
         teamsTotalPriceWithoutDiscount -
         teamsTotalPriceWithoutDiscount * (yearlySavePercentage / 100);
-
-      teamsTotalPriceEl.textContent = `${formatPrice(teamsPriceWithDiscount)}`;
+      teamsTotalPriceEl.forEach((element) => {
+        element.textContent = `${formatPrice(teamsPriceWithDiscount)}`;
+      });
+      teamsPricingEl.textContent = `${formatPrice(teamsPriceWithDiscount)}`;
 
       teamsTotalPriceBreakdownEl.textContent = `(Basic €${formatPrice(teamsPricingYearly)} + ${userNumber - 1} x €${formatPrice(pricePerExtraUser - pricePerExtraUser * (yearlySavePercentage / 100))})`;
 
@@ -169,7 +173,13 @@ const initPricingPackages = () => {
         teamsTotalPriceWithoutDiscount * (yearlySavePercentage / 100) * 12
       );
     } else {
-      teamsTotalPriceEl.textContent = `${formatPrice(teamsPricing + pricePerExtraUser * (userNumber - 1))}`;
+      const teamsTotalPrice = teamsPricing + pricePerExtraUser * (userNumber - 1);
+
+      teamsTotalPriceEl.forEach((element) => {
+        element.textContent = `${formatPrice(teamsTotalPrice)}`;
+      });
+      teamsPricingEl.textContent = `${formatPrice(teamsTotalPrice)}`;
+
       teamsTotalPriceBreakdownEl.textContent = `(Basic €${formatPrice(teamsPricing)} + ${userNumber - 1} x €${formatPrice(pricePerExtraUser)})`;
     }
   };
