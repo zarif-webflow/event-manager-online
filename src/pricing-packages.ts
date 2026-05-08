@@ -16,6 +16,11 @@ const initPricingPackages = () => {
     parent: pricingPackageWrap,
   });
 
+  const monthlyOnlyElements = getMultipleHtmlElements({
+    selector: "[pricing-package=monthly-only-element]",
+    parent: pricingPackageWrap,
+  });
+
   const standardPricingEl = getHtmlElement({
     selector: "[pricing-package=standard-price]",
     parent: pricingPackageWrap,
@@ -75,7 +80,8 @@ const initPricingPackages = () => {
     !packageTimeToggler ||
     !yearlyOnlyElements ||
     !teamsTotalPriceBreakdownEl ||
-    !teamsSelectedUserNumberEl
+    !teamsSelectedUserNumberEl ||
+    !monthlyOnlyElements
   ) {
     console.error("Missing pricing packages elements");
     return;
@@ -116,10 +122,13 @@ const initPricingPackages = () => {
     standardPricingEl.textContent = formatPrice(standardPricingYearly);
     standardPriceSaveEl.textContent = formatPrice(standardPricingYearlySave);
     teamsPricingEl.textContent = formatPrice(teamsPricingYearly);
-    // teamsPriceSaveEl.textContent = formatPrice(teamsPricingYearlySave);
 
     yearlyOnlyElements.forEach((element) => {
       element.style.display = "block";
+    });
+
+    monthlyOnlyElements.forEach((element) => {
+      element.style.display = "none";
     });
   };
 
@@ -129,6 +138,10 @@ const initPricingPackages = () => {
 
     yearlyOnlyElements.forEach((element) => {
       element.style.display = "none";
+    });
+
+    monthlyOnlyElements.forEach((element) => {
+      element.style.display = "block";
     });
   };
 
