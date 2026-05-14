@@ -98,6 +98,7 @@ const initPricingPackages = () => {
 
   let isYearlyToggled = false;
   let currentSelectedUsers = 1;
+  let rafId: number | null = null;
   const maxNumberOfUsers = Number.parseInt(
     pricingPackageWrap.getAttribute("max-number-of-users") || ""
   );
@@ -185,14 +186,16 @@ const initPricingPackages = () => {
   };
 
   packageTimeToggler.addEventListener("click", () => {
-    if (isYearlyToggled) {
-      showMonthly();
-    } else {
-      showYearly();
-    }
     isYearlyToggled = !isYearlyToggled;
 
-    setUserValue(currentSelectedUsers);
+    requestAnimationFrame(() => {
+      if (isYearlyToggled) {
+        showYearly();
+      } else {
+        showMonthly();
+      }
+      setUserValue(currentSelectedUsers);
+    });
   });
 
   isYearlyToggled = true;
@@ -202,7 +205,12 @@ const initPricingPackages = () => {
   teamsUserRangeInput.addEventListener("input", (event) => {
     const userNumber = Number.parseInt((event.target as HTMLInputElement).value);
     currentSelectedUsers = userNumber;
-    setUserValue(userNumber);
+
+    if (rafId !== null) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      setUserValue(userNumber);
+    });
   });
 };
 
