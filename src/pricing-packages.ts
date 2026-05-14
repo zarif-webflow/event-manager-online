@@ -1,5 +1,4 @@
 import "nouislider/dist/nouislider.min.css";
-import "./pricing-packages.css";
 
 import { afterWebflowReady, getHtmlElement, getMultipleHtmlElements } from "@taj-wf/utils";
 import noUiSlider from "nouislider";
