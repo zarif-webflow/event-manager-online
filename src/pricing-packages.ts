@@ -1,4 +1,8 @@
+import "nouislider/dist/nouislider.min.css";
+import "./pricing-packages.css";
+
 import { afterWebflowReady, getHtmlElement, getMultipleHtmlElements } from "@taj-wf/utils";
+import noUiSlider from "nouislider";
 
 const formatPrice = (price: number): string => {
   // Math.round is used inside to prevent floating point inaccuracies (e.g. 0.29 * 100 = 28.999999999999996)
@@ -43,8 +47,8 @@ const initPricingPackages = () => {
     log: "error",
   });
 
-  const teamsUserRangeInput = getHtmlElement({
-    selector: "input[type=range]",
+  const teamsUserRangeSlider = getHtmlElement({
+    selector: "[pricing-package=range-slider]",
     log: "error",
     parent: pricingPackageWrap,
   });
@@ -75,7 +79,7 @@ const initPricingPackages = () => {
     !standardPriceSaveEl ||
     !teamsPricingEl ||
     !teamsPriceSaveEl ||
-    !teamsUserRangeInput ||
+    !teamsUserRangeSlider ||
     !teamsTotalPriceEl ||
     !packageTimeToggler ||
     !yearlyOnlyElements ||
@@ -98,7 +102,6 @@ const initPricingPackages = () => {
 
   let isYearlyToggled = false;
   let currentSelectedUsers = 1;
-  let rafId: number | null = null;
   const maxNumberOfUsers = Number.parseInt(
     pricingPackageWrap.getAttribute("max-number-of-users") || ""
   );
@@ -202,15 +205,28 @@ const initPricingPackages = () => {
   showYearly();
   setUserValue(currentSelectedUsers);
 
-  teamsUserRangeInput.addEventListener("input", (event) => {
-    const userNumber = Number.parseInt((event.target as HTMLInputElement).value);
-    currentSelectedUsers = userNumber;
+  const rangeSlider = noUiSlider.create(teamsUserRangeSlider, {
+    start: 1,
+    connect: false,
+    range: {
+      min: 1,
+      max: maxNumberOfUsers,
+    },
+    step: 1,
+  });
 
-    if (rafId !== null) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(() => {
-      rafId = null;
-      setUserValue(userNumber);
-    });
+  rangeSlider.on("update", (values) => {
+    const sliderValue = values.at(0);
+    const sliderValueInt = Number.parseInt(sliderValue?.toString() || "");
+
+    if (Number.isNaN(sliderValueInt)) {
+      console.error("Invalid slider value");
+      return;
+    }
+
+    currentSelectedUsers = sliderValueInt;
+
+    setUserValue(currentSelectedUsers);
   });
 };
 
