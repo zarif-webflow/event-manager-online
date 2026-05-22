@@ -6,7 +6,10 @@ import noUiSlider from "nouislider";
 const formatPrice = (price: number): string => {
   // Math.round is used inside to prevent floating point inaccuracies (e.g. 0.29 * 100 = 28.999999999999996)
   const truncated = Math.trunc(Math.round(price * 10000) / 100) / 100;
-  return truncated.toFixed(2);
+  return new Intl.NumberFormat("de-DE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(truncated);
 };
 
 const initPricingPackages = () => {
@@ -101,8 +104,8 @@ const initPricingPackages = () => {
     return;
   }
 
-  const standardPricing = Number.parseFloat(standardPricingEl.textContent);
-  const teamsPricing = Number.parseFloat(teamsPricingEl.textContent);
+  const standardPricing = Number.parseFloat(standardPricingEl.textContent || "");
+  const teamsPricing = Number.parseFloat(teamsPricingEl.textContent || "");
 
   const yearlySavePercentageStr = pricingPackageWrap.getAttribute("yearly-save-percentage") || "";
   const yearlySavePercentage = Number.parseFloat(yearlySavePercentageStr);
