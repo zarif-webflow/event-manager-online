@@ -99,10 +99,11 @@ const initPricingPackages = () => {
   const pricePerExtraUserStr = pricingPackageWrap.getAttribute("price-per-extra-user") || "";
   const pricePerExtraUser = Number.parseFloat(pricePerExtraUserStr);
 
-  let isYearlyToggled = false;
-  let currentSelectedUsers = 1;
   const maxNumberOfUsers = Number.parseInt(
     pricingPackageWrap.getAttribute("max-number-of-users") || ""
+  );
+  const defaultNumberOfUsers = Number.parseInt(
+    pricingPackageWrap.getAttribute("default-number-of-users") || ""
   );
 
   if (
@@ -110,11 +111,17 @@ const initPricingPackages = () => {
     Number.isNaN(teamsPricing) ||
     Number.isNaN(yearlySavePercentage) ||
     Number.isNaN(maxNumberOfUsers) ||
-    Number.isNaN(pricePerExtraUser)
+    Number.isNaN(pricePerExtraUser) ||
+    Number.isNaN(defaultNumberOfUsers)
   ) {
     console.error("Missing or invalid pricing packages numeric data");
     return;
   }
+
+  let isYearlyToggled = false;
+  let currentSelectedUsers = defaultNumberOfUsers;
+
+  console.log(currentSelectedUsers);
 
   const standardPricingYearlySave = standardPricing * (yearlySavePercentage / 100) * 12;
 
@@ -205,7 +212,7 @@ const initPricingPackages = () => {
   setUserValue(currentSelectedUsers);
 
   const rangeSlider = noUiSlider.create(teamsUserRangeSlider, {
-    start: 1,
+    start: defaultNumberOfUsers,
     connect: false,
     range: {
       min: 1,
