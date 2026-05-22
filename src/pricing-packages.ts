@@ -121,8 +121,6 @@ const initPricingPackages = () => {
   let isYearlyToggled = false;
   let currentSelectedUsers = defaultNumberOfUsers;
 
-  console.log(currentSelectedUsers);
-
   const standardPricingYearlySave = standardPricing * (yearlySavePercentage / 100) * 12;
 
   const standardPricingYearly = standardPricing - standardPricing * (yearlySavePercentage / 100);
