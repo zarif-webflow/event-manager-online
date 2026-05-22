@@ -116,6 +116,9 @@ const initPricingPackages = () => {
   const defaultNumberOfUsers = Number.parseInt(
     pricingPackageWrap.getAttribute("default-number-of-users") || ""
   );
+  const minNumberOfUsers = Number.parseInt(
+    pricingPackageWrap.getAttribute("minimum-number-of-users") || ""
+  );
 
   if (
     Number.isNaN(standardPricing) ||
@@ -123,7 +126,8 @@ const initPricingPackages = () => {
     Number.isNaN(yearlySavePercentage) ||
     Number.isNaN(maxNumberOfUsers) ||
     Number.isNaN(pricePerExtraUser) ||
-    Number.isNaN(defaultNumberOfUsers)
+    Number.isNaN(defaultNumberOfUsers) ||
+    Number.isNaN(minNumberOfUsers)
   ) {
     console.error("Missing or invalid pricing packages numeric data");
     console.error("Standard pricing: ", standardPricing);
@@ -132,6 +136,14 @@ const initPricingPackages = () => {
     console.error("Max number of users: ", maxNumberOfUsers);
     console.error("Price per extra user: ", pricePerExtraUser);
     console.error("Default number of users: ", defaultNumberOfUsers);
+    console.error("Minimum number of users: ", minNumberOfUsers);
+    return;
+  }
+
+  if (defaultNumberOfUsers < minNumberOfUsers) {
+    console.error(
+      "Default number of users must be greater than or equal to minimum number of users"
+    );
     return;
   }
 
@@ -230,7 +242,7 @@ const initPricingPackages = () => {
     start: defaultNumberOfUsers,
     connect: false,
     range: {
-      min: 1,
+      min: minNumberOfUsers,
       max: maxNumberOfUsers,
     },
     step: 1,
