@@ -87,6 +87,17 @@ const initPricingPackages = () => {
     !monthlyOnlyElements
   ) {
     console.error("Missing pricing packages elements");
+    console.error("Standard price: ", standardPricingEl);
+    console.error("Standard price save: ", standardPriceSaveEl);
+    console.error("Teams price: ", teamsPricingEl);
+    console.error("Teams price save: ", teamsPriceSaveEl);
+    console.error("Teams user range slider: ", teamsUserRangeSlider);
+    console.error("Teams total price: ", teamsTotalPriceEl);
+    console.error("Package time toggler: ", packageTimeToggler);
+    console.error("Yearly only elements: ", yearlyOnlyElements);
+    console.error("Teams total price breakdown: ", teamsTotalPriceBreakdownEl);
+    console.error("Teams selected user number: ", teamsSelectedUserNumberEl);
+    console.error("Monthly only elements: ", monthlyOnlyElements);
     return;
   }
 
@@ -115,6 +126,12 @@ const initPricingPackages = () => {
     Number.isNaN(defaultNumberOfUsers)
   ) {
     console.error("Missing or invalid pricing packages numeric data");
+    console.error("Standard pricing: ", standardPricing);
+    console.error("Teams pricing: ", teamsPricing);
+    console.error("Yearly save percentage: ", yearlySavePercentage);
+    console.error("Max number of users: ", maxNumberOfUsers);
+    console.error("Price per extra user: ", pricePerExtraUser);
+    console.error("Default number of users: ", defaultNumberOfUsers);
     return;
   }
 
