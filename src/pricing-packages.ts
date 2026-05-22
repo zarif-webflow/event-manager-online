@@ -12,6 +12,14 @@ const formatPrice = (price: number): string => {
   }).format(truncated);
 };
 
+const formatPriceBreakdown = (
+  basicPrice: number,
+  userNumber: number,
+  extraUserPrice: number
+): string => {
+  return `(Basic ${formatPrice(basicPrice)} € + ${userNumber - 1} x ${formatPrice(extraUserPrice)} €)`;
+};
+
 const initPricingPackages = () => {
   const pricingPackageWrap = getHtmlElement({ selector: "[pricing-package=wrap]", log: "error" });
 
@@ -32,6 +40,11 @@ const initPricingPackages = () => {
     parent: pricingPackageWrap,
     log: "error",
   });
+  const standardTotalPriceEl =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=standard-total-price]",
+      log: "error",
+    }) || [];
   const standardPriceSaveEl = getHtmlElement({
     selector: "[pricing-package=standard-price-save]",
     parent: pricingPackageWrap,
@@ -87,7 +100,8 @@ const initPricingPackages = () => {
     !yearlyOnlyElements ||
     !teamsTotalPriceBreakdownEl ||
     !teamsSelectedUserNumberEl ||
-    !monthlyOnlyElements
+    !monthlyOnlyElements ||
+    !standardTotalPriceEl
   ) {
     console.error("Missing pricing packages elements");
     console.error("Standard price: ", standardPricingEl);
@@ -101,6 +115,7 @@ const initPricingPackages = () => {
     console.error("Teams total price breakdown: ", teamsTotalPriceBreakdownEl);
     console.error("Teams selected user number: ", teamsSelectedUserNumberEl);
     console.error("Monthly only elements: ", monthlyOnlyElements);
+    console.error("Standard total price: ", standardTotalPriceEl);
     return;
   }
 
@@ -162,6 +177,9 @@ const initPricingPackages = () => {
     standardPricingEl.textContent = formatPrice(standardPricingYearly);
     standardPriceSaveEl.textContent = formatPrice(standardPricingYearlySave);
     teamsPricingEl.textContent = formatPrice(teamsPricingYearly);
+    standardTotalPriceEl.forEach((element) => {
+      element.textContent = formatPrice(standardPricingYearly);
+    });
 
     yearlyOnlyElements.forEach((element) => {
       element.style.display = "block";
@@ -175,6 +193,9 @@ const initPricingPackages = () => {
   const showMonthly = () => {
     standardPricingEl.textContent = formatPrice(standardPricing);
     teamsPricingEl.textContent = formatPrice(teamsPricing);
+    standardTotalPriceEl.forEach((element) => {
+      element.textContent = formatPrice(standardPricing);
+    });
 
     yearlyOnlyElements.forEach((element) => {
       element.style.display = "none";
@@ -207,7 +228,11 @@ const initPricingPackages = () => {
       });
       teamsPricingEl.textContent = `${formatPrice(teamsPriceWithDiscount)}`;
 
-      teamsTotalPriceBreakdownEl.textContent = `(Basic €${formatPrice(teamsPricingYearly)} + ${userNumber - 1} x €${formatPrice(pricePerExtraUser - pricePerExtraUser * (yearlySavePercentage / 100))})`;
+      teamsTotalPriceBreakdownEl.textContent = formatPriceBreakdown(
+        teamsPricingYearly,
+        userNumber,
+        pricePerExtraUser - pricePerExtraUser * (yearlySavePercentage / 100)
+      );
 
       teamsPriceSaveEl.textContent = formatPrice(
         teamsTotalPriceWithoutDiscount * (yearlySavePercentage / 100) * 12
@@ -220,7 +245,11 @@ const initPricingPackages = () => {
       });
       teamsPricingEl.textContent = `${formatPrice(teamsTotalPrice)}`;
 
-      teamsTotalPriceBreakdownEl.textContent = `(Basic €${formatPrice(teamsPricing)} + ${userNumber - 1} x €${formatPrice(pricePerExtraUser)})`;
+      teamsTotalPriceBreakdownEl.textContent = formatPriceBreakdown(
+        teamsPricing,
+        userNumber,
+        pricePerExtraUser
+      );
     }
   };
 
