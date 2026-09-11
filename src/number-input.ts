@@ -40,6 +40,8 @@ type NumberInputGroup = {
 const initializedElements = new WeakSet<NumberInputElement>();
 const groups = new Map<string, NumberInputGroup>();
 let anonymousGroupId = 0;
+const repeatDelay = 400;
+const repeatInterval = 80;
 
 const parseAttributeNumber = (element: HTMLElement, name: string): number | undefined => {
   const value = element.getAttribute(name);
@@ -76,6 +78,68 @@ const setAriaLabelIfMissing = (element: HTMLElement, label: string): void => {
   }
 };
 
+const addButtonInteraction = (button: HTMLButtonElement, change: () => void): void => {
+  let repeatTimeout: number | undefined;
+  let repeatIntervalId: number | undefined;
+  let repeatStarted = false;
+  let activePointerId: number | undefined;
+
+  const stopRepeating = (): void => {
+    if (repeatTimeout !== undefined) window.clearTimeout(repeatTimeout);
+    if (repeatIntervalId !== undefined) window.clearInterval(repeatIntervalId);
+    if (activePointerId !== undefined && button.hasPointerCapture(activePointerId)) {
+      button.releasePointerCapture(activePointerId);
+    }
+
+    repeatTimeout = undefined;
+    repeatIntervalId = undefined;
+    activePointerId = undefined;
+    window.removeEventListener("blur", stopRepeating);
+    document.removeEventListener("visibilitychange", stopRepeating);
+  };
+
+  const startRepeating = (): void => {
+    repeatStarted = true;
+    change();
+    repeatIntervalId = window.setInterval(() => {
+      if (button.disabled) {
+        stopRepeating();
+        return;
+      }
+
+      change();
+    }, repeatInterval);
+  };
+
+  button.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || button.disabled) return;
+
+    repeatStarted = false;
+    stopRepeating();
+    activePointerId = event.pointerId;
+    button.setPointerCapture(event.pointerId);
+    repeatTimeout = window.setTimeout(startRepeating, repeatDelay);
+    window.addEventListener("blur", stopRepeating);
+    document.addEventListener("visibilitychange", stopRepeating);
+  });
+
+  const stopPointerInteraction = (): void => {
+    stopRepeating();
+  };
+
+  button.addEventListener("pointerup", stopPointerInteraction);
+  button.addEventListener("pointercancel", stopPointerInteraction);
+  button.addEventListener("lostpointercapture", stopPointerInteraction);
+  button.addEventListener("click", () => {
+    if (repeatStarted) {
+      repeatStarted = false;
+      return;
+    }
+
+    change();
+  });
+};
+
 const renderMember = (member: NumberInputMember, value: number): void => {
   member.input.value = String(value);
   member.input.setAttribute("aria-valuenow", String(value));
@@ -103,7 +167,7 @@ const getConfig = (element: HTMLElement): NumberInputConfig | null => {
   const min = parseAttributeNumber(element, "min");
   const max = parseAttributeNumber(element, "max");
   const step = parseAttributeNumber(element, "step") ?? 1;
-  const defaultValue = parseAttributeNumber(element, "default") ?? min ?? 0;
+  const defaultValue = parseAttributeNumber(element, "default-val") ?? min ?? 0;
 
   if (step <= 0 || (min !== undefined && max !== undefined && min > max)) {
     console.error("Invalid number input configuration", element);
@@ -199,8 +263,8 @@ const initializeMember = (
   element.setValue = setValue;
   element.onChange = onChange;
 
-  decrease.addEventListener("click", () => setValue(group.value - config.step));
-  increase.addEventListener("click", () => setValue(group.value + config.step));
+  addButtonInteraction(decrease, () => setValue(group.value - config.step));
+  addButtonInteraction(increase, () => setValue(group.value + config.step));
   input.addEventListener("change", () => {
     const value = Number(input.value);
     if (Number.isFinite(value)) {
