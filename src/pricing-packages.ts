@@ -1,8 +1,8 @@
-// @ts-expect-error nouislider does not provide TypeScript declarations for its CSS entrypoint.
-import "nouislider/dist/nouislider.min.css";
+import "./number-input";
 
 import { afterWebflowReady, getHtmlElement, getMultipleHtmlElements } from "@taj-wf/utils";
-import noUiSlider from "nouislider";
+
+import type { NumberInputElement } from "./number-input";
 
 const formatPrice = (price: number): string => {
   // Math.round is used inside to prevent floating point inaccuracies (e.g. 0.29 * 100 = 28.999999999999996)
@@ -13,12 +13,30 @@ const formatPrice = (price: number): string => {
   }).format(truncated);
 };
 
-const formatPriceBreakdown = (
-  basicPrice: number,
-  userNumber: number,
-  extraUserPrice: number
-): string => {
-  return `(Basic ${formatPrice(basicPrice)} € + ${userNumber - 1} x ${formatPrice(extraUserPrice)} €)`;
+const getNumberFromAttribute = ({
+  element,
+  attributeName,
+  isInteger,
+}: {
+  element: HTMLElement;
+  attributeName: string;
+  isInteger?: boolean;
+}): number | null => {
+  const attributeValue = element.getAttribute(attributeName);
+  if (!attributeValue) {
+    console.error(`Attribute "${attributeName}" is missing on element`, element);
+    return null;
+  }
+  const numberValue = isInteger
+    ? Number.parseInt(attributeValue)
+    : Number.parseFloat(attributeValue);
+
+  if (Number.isNaN(numberValue)) {
+    console.error(`Attribute "${attributeName}" is not a valid number on element`, element);
+    return null;
+  }
+
+  return numberValue;
 };
 
 const initPricingPackages = () => {
@@ -26,63 +44,94 @@ const initPricingPackages = () => {
 
   if (!pricingPackageWrap) return;
 
-  const yearlyOnlyElements =
-    getMultipleHtmlElements({
-      selector: "[pricing-package=yearly-only-element]",
-    }) || [];
+  const standardPriceMonthly = getNumberFromAttribute({
+    element: pricingPackageWrap,
+    attributeName: "standard-price-monthly",
+  });
 
-  const monthlyOnlyElements =
-    getMultipleHtmlElements({
-      selector: "[pricing-package=monthly-only-element]",
-    }) || [];
+  const standardPriceYearly = getNumberFromAttribute({
+    element: pricingPackageWrap,
+    attributeName: "standard-price-yearly",
+  });
 
-  const standardPricingEl = getHtmlElement({
+  const teamsPriceMonthly = getNumberFromAttribute({
+    element: pricingPackageWrap,
+    attributeName: "teams-price-monthly",
+  });
+
+  const teamsPriceYearly = getNumberFromAttribute({
+    element: pricingPackageWrap,
+    attributeName: "teams-price-yearly",
+  });
+
+  const extraPerUserMonthly = getNumberFromAttribute({
+    element: pricingPackageWrap,
+    attributeName: "extra-per-user-monthly",
+  });
+
+  const extraPerUserYearly = getNumberFromAttribute({
+    element: pricingPackageWrap,
+    attributeName: "extra-per-user-yearly",
+  });
+
+  const includedUsersInTeams = getNumberFromAttribute({
+    element: pricingPackageWrap,
+    attributeName: "included-users-in-teams",
+    isInteger: true,
+  });
+
+  const maxUsers = getNumberFromAttribute({
+    element: pricingPackageWrap,
+    attributeName: "max-users",
+    isInteger: true,
+  });
+
+  const minUsers = getNumberFromAttribute({
+    element: pricingPackageWrap,
+    attributeName: "min-users",
+    isInteger: true,
+  });
+
+  if (
+    standardPriceMonthly === null ||
+    standardPriceYearly === null ||
+    teamsPriceMonthly === null ||
+    teamsPriceYearly === null ||
+    extraPerUserMonthly === null ||
+    extraPerUserYearly === null ||
+    includedUsersInTeams === null ||
+    maxUsers === null ||
+    minUsers === null
+  ) {
+    console.error("Failed to initialize pricing packages");
+    return;
+  }
+
+  const standardPriceElements = getMultipleHtmlElements({
     selector: "[pricing-package=standard-price]",
-    parent: pricingPackageWrap,
     log: "error",
   });
-  const standardTotalPriceEl =
-    getMultipleHtmlElements({
-      selector: "[pricing-package=standard-total-price]",
-      log: "error",
-    }) || [];
-  const standardPriceSaveEl = getHtmlElement({
+
+  const standardPriceSaveElements = getMultipleHtmlElements({
     selector: "[pricing-package=standard-price-save]",
-    parent: pricingPackageWrap,
     log: "error",
   });
 
-  const teamsPricingEl = getHtmlElement({
+  const teamsPriceElements = getMultipleHtmlElements({
     selector: "[pricing-package=teams-price]",
-    parent: pricingPackageWrap,
-    log: "error",
-  });
-  const teamsPriceSaveEl = getHtmlElement({
-    selector: "[pricing-package=teams-price-save]",
-    parent: pricingPackageWrap,
     log: "error",
   });
 
-  const teamsUserRangeSlider = getHtmlElement({
-    selector: "[pricing-package=range-slider]",
+  const teamsPriceSaveElements = getMultipleHtmlElements({
+    selector: "[pricing-package=teams-price-save]",
     log: "error",
-    parent: pricingPackageWrap,
   });
-  const teamsTotalPriceEl =
-    getMultipleHtmlElements({
-      selector: "[pricing-package=teams-total-price]",
-      log: "error",
-    }) || [];
-  const teamsSelectedUserNumberEl =
+
+  const teamsSelectedUserNumberElements =
     getMultipleHtmlElements({
       selector: "[pricing-package=selected-user-number]",
       log: "error",
     }) || [];
-  const teamsTotalPriceBreakdownEl = getHtmlElement({
-    selector: "[pricing-package=price-breakdown]",
-    parent: pricingPackageWrap,
-    log: "error",
-  });
 
   const packageTimeToggler = getHtmlElement({
     selector: "[pricing-package=time-toggler]",
@@ -91,209 +140,165 @@ const initPricingPackages = () => {
   });
 
   if (
-    !standardPricingEl ||
-    !standardPriceSaveEl ||
-    !teamsPricingEl ||
-    !teamsPriceSaveEl ||
-    !teamsUserRangeSlider ||
-    !teamsTotalPriceEl ||
-    !packageTimeToggler ||
-    !yearlyOnlyElements ||
-    !teamsTotalPriceBreakdownEl ||
-    !teamsSelectedUserNumberEl ||
-    !monthlyOnlyElements ||
-    !standardTotalPriceEl
+    !standardPriceElements ||
+    !standardPriceSaveElements ||
+    !teamsPriceElements ||
+    !teamsPriceSaveElements ||
+    !teamsSelectedUserNumberElements ||
+    !packageTimeToggler
   ) {
-    console.error("Missing pricing packages elements");
-    console.error("Standard price: ", standardPricingEl);
-    console.error("Standard price save: ", standardPriceSaveEl);
-    console.error("Teams price: ", teamsPricingEl);
-    console.error("Teams price save: ", teamsPriceSaveEl);
-    console.error("Teams user range slider: ", teamsUserRangeSlider);
-    console.error("Teams total price: ", teamsTotalPriceEl);
-    console.error("Package time toggler: ", packageTimeToggler);
-    console.error("Yearly only elements: ", yearlyOnlyElements);
-    console.error("Teams total price breakdown: ", teamsTotalPriceBreakdownEl);
-    console.error("Teams selected user number: ", teamsSelectedUserNumberEl);
-    console.error("Monthly only elements: ", monthlyOnlyElements);
-    console.error("Standard total price: ", standardTotalPriceEl);
-    return;
-  }
-
-  const standardPricing = Number.parseFloat(standardPricingEl.textContent || "");
-  const teamsPricing = Number.parseFloat(teamsPricingEl.textContent || "");
-
-  const yearlySavePercentageStr = pricingPackageWrap.getAttribute("yearly-save-percentage") || "";
-  const yearlySavePercentage = Number.parseFloat(yearlySavePercentageStr);
-
-  const pricePerExtraUserStr = pricingPackageWrap.getAttribute("price-per-extra-user") || "";
-  const pricePerExtraUser = Number.parseFloat(pricePerExtraUserStr);
-
-  const maxNumberOfUsers = Number.parseInt(
-    pricingPackageWrap.getAttribute("max-number-of-users") || ""
-  );
-  const defaultNumberOfUsers = Number.parseInt(
-    pricingPackageWrap.getAttribute("default-number-of-users") || ""
-  );
-  const minNumberOfUsers = Number.parseInt(
-    pricingPackageWrap.getAttribute("minimum-number-of-users") || ""
-  );
-
-  if (
-    Number.isNaN(standardPricing) ||
-    Number.isNaN(teamsPricing) ||
-    Number.isNaN(yearlySavePercentage) ||
-    Number.isNaN(maxNumberOfUsers) ||
-    Number.isNaN(pricePerExtraUser) ||
-    Number.isNaN(defaultNumberOfUsers) ||
-    Number.isNaN(minNumberOfUsers)
-  ) {
-    console.error("Missing or invalid pricing packages numeric data");
-    console.error("Standard pricing: ", standardPricing);
-    console.error("Teams pricing: ", teamsPricing);
-    console.error("Yearly save percentage: ", yearlySavePercentage);
-    console.error("Max number of users: ", maxNumberOfUsers);
-    console.error("Price per extra user: ", pricePerExtraUser);
-    console.error("Default number of users: ", defaultNumberOfUsers);
-    console.error("Minimum number of users: ", minNumberOfUsers);
-    return;
-  }
-
-  if (defaultNumberOfUsers < minNumberOfUsers) {
-    console.error(
-      "Default number of users must be greater than or equal to minimum number of users"
-    );
+    console.error("Failed to initialize pricing packages");
     return;
   }
 
   let isYearlyToggled = false;
-  let currentSelectedUsers = defaultNumberOfUsers;
+  let currentSelectedUserNumber = includedUsersInTeams;
 
-  const standardPricingYearlySave = standardPricing * (yearlySavePercentage / 100) * 12;
+  const getTeamsPrice = ({
+    basePrice,
+    extraUserPrice,
+    userNumber,
+  }: {
+    basePrice: number;
+    extraUserPrice: number;
+    userNumber: number;
+  }) => {
+    const extraUsers = Math.max(0, userNumber - includedUsersInTeams);
+    const extraUsersPrice = extraUsers * extraUserPrice;
 
-  const standardPricingYearly = standardPricing - standardPricing * (yearlySavePercentage / 100);
-  const teamsPricingYearly = teamsPricing - teamsPricing * (yearlySavePercentage / 100);
-
-  const showYearly = () => {
-    standardPricingEl.textContent = formatPrice(standardPricingYearly);
-    standardPriceSaveEl.textContent = formatPrice(standardPricingYearlySave);
-    teamsPricingEl.textContent = formatPrice(teamsPricingYearly);
-    standardTotalPriceEl.forEach((element) => {
-      element.textContent = formatPrice(standardPricingYearly);
-    });
-
-    yearlyOnlyElements.forEach((element) => {
-      element.style.display = "block";
-    });
-
-    monthlyOnlyElements.forEach((element) => {
-      element.style.display = "none";
-    });
+    return {
+      totalPrice: basePrice + extraUsersPrice,
+      extraUsersPrice,
+    };
   };
 
-  const showMonthly = () => {
-    standardPricingEl.textContent = formatPrice(standardPricing);
-    teamsPricingEl.textContent = formatPrice(teamsPricing);
-    standardTotalPriceEl.forEach((element) => {
-      element.textContent = formatPrice(standardPricing);
-    });
-
-    yearlyOnlyElements.forEach((element) => {
-      element.style.display = "none";
-    });
-
-    monthlyOnlyElements.forEach((element) => {
-      element.style.display = "block";
-    });
+  type PackagePrices = {
+    standardPrice: number;
+    teamsPrice: number;
+    teamsExtraUsersPrice: number;
   };
 
-  const setUserValue = (userNumber: number) => {
-    teamsSelectedUserNumberEl.forEach((element) => {
-      element.textContent = `${userNumber}`;
+  const getMonthlyPrices = (): PackagePrices => {
+    const teamsPrice = getTeamsPrice({
+      basePrice: teamsPriceMonthly,
+      extraUserPrice: extraPerUserMonthly,
+      userNumber: currentSelectedUserNumber,
     });
+    return {
+      standardPrice: standardPriceMonthly,
+      teamsPrice: teamsPrice.totalPrice,
+      teamsExtraUsersPrice: teamsPrice.extraUsersPrice,
+    };
+  };
 
-    if (userNumber > 1) {
-      teamsTotalPriceBreakdownEl.style.display = "block";
-    } else {
-      teamsTotalPriceBreakdownEl.style.display = "none";
-    }
+  const getYearlyPrices = (): PackagePrices => {
+    const teamsPrice = getTeamsPrice({
+      basePrice: teamsPriceYearly,
+      extraUserPrice: extraPerUserYearly,
+      userNumber: currentSelectedUserNumber,
+    });
+    return {
+      standardPrice: standardPriceYearly,
+      teamsPrice: teamsPrice.totalPrice,
+      teamsExtraUsersPrice: teamsPrice.extraUsersPrice,
+    };
+  };
+
+  const getYearlySavings = ({
+    yearlyPrices,
+    monthlyPrices,
+  }: {
+    yearlyPrices: PackagePrices;
+    monthlyPrices: PackagePrices;
+  }): { standardSavings: number; teamsSavings: number } => {
+    const standardSavings = (monthlyPrices.standardPrice - yearlyPrices.standardPrice) * 12;
+    const teamsSavings = (monthlyPrices.teamsPrice - yearlyPrices.teamsPrice) * 12;
+
+    return {
+      standardSavings,
+      teamsSavings,
+    };
+  };
+
+  const updatePricesWithUI = () => {
+    const monthlyPrices = getMonthlyPrices();
+
+    teamsSelectedUserNumberElements.forEach((element) => {
+      element.textContent = `${currentSelectedUserNumber}`;
+    });
 
     if (isYearlyToggled) {
-      const teamsTotalPriceWithoutDiscount = teamsPricing + pricePerExtraUser * (userNumber - 1);
+      const yearlyPrices = getYearlyPrices();
+      const savings = getYearlySavings({ yearlyPrices, monthlyPrices });
 
-      const teamsPriceWithDiscount =
-        teamsTotalPriceWithoutDiscount -
-        teamsTotalPriceWithoutDiscount * (yearlySavePercentage / 100);
-      teamsTotalPriceEl.forEach((element) => {
-        element.textContent = `${formatPrice(teamsPriceWithDiscount)}`;
+      standardPriceElements.forEach((element) => {
+        element.textContent = `${formatPrice(yearlyPrices.standardPrice)}`;
       });
-      teamsPricingEl.textContent = `${formatPrice(teamsPriceWithDiscount)}`;
-
-      teamsTotalPriceBreakdownEl.textContent = formatPriceBreakdown(
-        teamsPricingYearly,
-        userNumber,
-        pricePerExtraUser - pricePerExtraUser * (yearlySavePercentage / 100)
-      );
-
-      teamsPriceSaveEl.textContent = formatPrice(
-        teamsTotalPriceWithoutDiscount * (yearlySavePercentage / 100) * 12
-      );
+      standardPriceSaveElements.forEach((element) => {
+        element.classList.remove("is-hidden");
+        element.textContent = `${formatPrice(savings.standardSavings)}`;
+      });
+      teamsPriceElements.forEach((element) => {
+        element.textContent = `${formatPrice(yearlyPrices.teamsPrice)}`;
+      });
+      teamsPriceSaveElements.forEach((element) => {
+        element.classList.remove("is-hidden");
+        element.textContent = `${formatPrice(savings.teamsSavings)}`;
+      });
     } else {
-      const teamsTotalPrice = teamsPricing + pricePerExtraUser * (userNumber - 1);
-
-      teamsTotalPriceEl.forEach((element) => {
-        element.textContent = `${formatPrice(teamsTotalPrice)}`;
+      standardPriceElements.forEach((element) => {
+        element.textContent = `${formatPrice(monthlyPrices.standardPrice)}`;
       });
-      teamsPricingEl.textContent = `${formatPrice(teamsTotalPrice)}`;
-
-      teamsTotalPriceBreakdownEl.textContent = formatPriceBreakdown(
-        teamsPricing,
-        userNumber,
-        pricePerExtraUser
-      );
+      standardPriceSaveElements.forEach((element) => {
+        element.classList.add("is-hidden");
+      });
+      teamsPriceElements.forEach((element) => {
+        element.textContent = `${formatPrice(monthlyPrices.teamsPrice)}`;
+      });
+      teamsPriceSaveElements.forEach((element) => {
+        element.classList.add("is-hidden");
+      });
     }
   };
 
-  packageTimeToggler.addEventListener("click", () => {
-    isYearlyToggled = !isYearlyToggled;
+  const setupPackageTimeToggler = () => {
+    packageTimeToggler.setAttribute("aria-checked", isYearlyToggled ? "true" : "false");
 
-    requestAnimationFrame(() => {
-      if (isYearlyToggled) {
-        showYearly();
-      } else {
-        showMonthly();
-      }
-      setUserValue(currentSelectedUsers);
+    packageTimeToggler.addEventListener("click", () => {
+      isYearlyToggled = !isYearlyToggled;
+      updatePricesWithUI();
     });
-  });
+  };
 
-  isYearlyToggled = true;
-  showYearly();
-  setUserValue(currentSelectedUsers);
+  const setupUserNumberInput = () => {
+    const userNumberInputWrap = getHtmlElement<NumberInputElement>({
+      selector: "[number-input-id=teams]",
+      parent: pricingPackageWrap,
+      log: "error",
+    });
 
-  const rangeSlider = noUiSlider.create(teamsUserRangeSlider, {
-    start: defaultNumberOfUsers,
-    connect: false,
-    range: {
-      min: minNumberOfUsers,
-      max: maxNumberOfUsers,
-    },
-    step: 1,
-  });
-
-  rangeSlider.on("update", (values) => {
-    const sliderValue = values.at(0);
-    const sliderValueInt = Number.parseInt(sliderValue?.toString() || "");
-
-    if (Number.isNaN(sliderValueInt)) {
-      console.error("Invalid slider value");
+    if (!userNumberInputWrap) {
+      console.error("Failed to initialize user number input");
       return;
     }
 
-    currentSelectedUsers = sliderValueInt;
+    userNumberInputWrap.setValue(currentSelectedUserNumber);
 
-    setUserValue(currentSelectedUsers);
-  });
+    userNumberInputWrap.onChange((newValue) => {
+      if (newValue < minUsers || newValue > maxUsers) {
+        console.error(`User number must be between ${minUsers} and ${maxUsers}`);
+        return;
+      }
+      currentSelectedUserNumber = newValue;
+
+      updatePricesWithUI();
+    });
+  };
+
+  // Initialize
+  setupPackageTimeToggler();
+  setupUserNumberInput();
+  updatePricesWithUI();
 };
 
 afterWebflowReady(() => {
