@@ -133,6 +133,24 @@ const initPricingPackages = () => {
       log: "error",
     }) || [];
 
+  const extraUserPriceElements =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=extra-user-price]",
+      log: "error",
+    }) || [];
+
+  const monthlyOnlyElements =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=monthly-only-element]",
+      log: "error",
+    }) || [];
+
+  const yearlyOnlyElements =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=yearly-only-element]",
+      log: "error",
+    }) || [];
+
   const packageTimeToggler = getHtmlElement({
     selector: "[pricing-package=time-toggler]",
     parent: pricingPackageWrap,
@@ -235,28 +253,38 @@ const initPricingPackages = () => {
         element.textContent = `${formatPrice(yearlyPrices.standardPrice)}`;
       });
       standardPriceSaveElements.forEach((element) => {
-        element.classList.remove("is-hidden");
         element.textContent = `${formatPrice(savings.standardSavings)}`;
       });
       teamsPriceElements.forEach((element) => {
         element.textContent = `${formatPrice(yearlyPrices.teamsPrice)}`;
       });
       teamsPriceSaveElements.forEach((element) => {
-        element.classList.remove("is-hidden");
         element.textContent = `${formatPrice(savings.teamsSavings)}`;
+      });
+      extraUserPriceElements.forEach((element) => {
+        element.textContent = `${formatPrice(extraPerUserYearly)}`;
+      });
+      yearlyOnlyElements.forEach((element) => {
+        element.classList.remove("is-hidden");
+      });
+      monthlyOnlyElements.forEach((element) => {
+        element.classList.add("is-hidden");
       });
     } else {
       standardPriceElements.forEach((element) => {
         element.textContent = `${formatPrice(monthlyPrices.standardPrice)}`;
       });
-      standardPriceSaveElements.forEach((element) => {
-        element.classList.add("is-hidden");
-      });
       teamsPriceElements.forEach((element) => {
         element.textContent = `${formatPrice(monthlyPrices.teamsPrice)}`;
       });
-      teamsPriceSaveElements.forEach((element) => {
+      extraUserPriceElements.forEach((element) => {
+        element.textContent = `${formatPrice(extraPerUserMonthly)}`;
+      });
+      yearlyOnlyElements.forEach((element) => {
         element.classList.add("is-hidden");
+      });
+      monthlyOnlyElements.forEach((element) => {
+        element.classList.remove("is-hidden");
       });
     }
   };
@@ -298,6 +326,9 @@ const initPricingPackages = () => {
   // Initialize
   setupPackageTimeToggler();
   setupUserNumberInput();
+
+  isYearlyToggled = true;
+
   updatePricesWithUI();
 };
 
