@@ -1,3 +1,4 @@
+// @ts-expect-error nouislider does not provide TypeScript declarations for its CSS entrypoint.
 import "nouislider/dist/nouislider.min.css";
 
 import { afterWebflowReady, getHtmlElement, getMultipleHtmlElements } from "@taj-wf/utils";
