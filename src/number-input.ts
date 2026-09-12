@@ -1,4 +1,4 @@
-import { afterWebflowReady, getHtmlElement, getMultipleHtmlElements } from "@taj-wf/utils";
+import { getHtmlElement, getMultipleHtmlElements } from "@taj-wf/utils";
 
 type NumberInputCallback = (value: number) => void;
 
@@ -310,7 +310,3 @@ export const initNumberInputs = (): NumberInputInstance[] => {
 
   return instances;
 };
-
-afterWebflowReady(() => {
-  initNumberInputs();
-});

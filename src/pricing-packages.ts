@@ -172,6 +172,54 @@ const initPricingPackages = () => {
   let isYearlyToggled = false;
   let currentSelectedUserNumber = includedUsersInTeams;
 
+  const numberInputConfig = {
+    min: minUsers,
+    max: maxUsers,
+    step: 1,
+    defaultValue: includedUsersInTeams,
+  };
+
+  const initPricingPackageNumberInputs = () => {
+    const numberInputWraps = getMultipleHtmlElements<NumberInputElement>({
+      selector: "[number-input-id=teams]",
+      log: "error",
+    });
+
+    if (!numberInputWraps) {
+      console.error("Failed to find number input wraps");
+      return;
+    }
+
+    numberInputWraps.forEach((wrap) => {
+      wrap.setAttribute("min", `${numberInputConfig.min}`);
+      wrap.setAttribute("max", `${numberInputConfig.max}`);
+      wrap.setAttribute("step", `${numberInputConfig.step}`);
+      wrap.setAttribute("default-val", `${numberInputConfig.defaultValue}`);
+    });
+  };
+
+  const initTeamsSectionNumberInputs = () => {
+    const numberInputWraps = getMultipleHtmlElements<NumberInputElement>({
+      selector: "[number-input-id=teams-section]",
+      log: "error",
+    });
+
+    if (!numberInputWraps) {
+      console.error("Failed to find number input wraps");
+      return;
+    }
+
+    numberInputWraps.forEach((wrap) => {
+      wrap.setAttribute("min", `1`);
+      wrap.setAttribute("max", `${numberInputConfig.max - numberInputConfig.defaultValue}`);
+      wrap.setAttribute("step", `${numberInputConfig.step}`);
+      wrap.setAttribute("default-val", `1`);
+    });
+  };
+
+  initPricingPackageNumberInputs();
+  initTeamsSectionNumberInputs();
+
   const getTeamsPrice = ({
     basePrice,
     extraUserPrice,
@@ -277,6 +325,9 @@ const initPricingPackages = () => {
       teamsPriceElements.forEach((element) => {
         element.textContent = `${formatPrice(monthlyPrices.teamsPrice)}`;
       });
+      teamsPriceSaveElements.forEach((element) => {
+        element.textContent = `${formatPrice(0)}`;
+      });
       extraUserPriceElements.forEach((element) => {
         element.textContent = `${formatPrice(extraPerUserMonthly)}`;
       });
@@ -298,10 +349,9 @@ const initPricingPackages = () => {
     });
   };
 
-  const setupUserNumberInput = () => {
+  const handleUserNumberInputs = () => {
     const userNumberInputWrap = getHtmlElement<NumberInputElement>({
       selector: "[number-input-id=teams]",
-      parent: pricingPackageWrap,
       log: "error",
     });
 
@@ -325,13 +375,241 @@ const initPricingPackages = () => {
 
   // Initialize
   setupPackageTimeToggler();
-  setupUserNumberInput();
+  handleUserNumberInputs();
 
   isYearlyToggled = true;
 
   updatePricesWithUI();
+
+  return {
+    teamsPriceMonthly,
+    teamsPriceYearly,
+    extraPerUserMonthly,
+    extraPerUserYearly,
+    getTeamsPrice,
+    numberInputConfig,
+  };
+};
+
+const initTeamsSection = ({
+  extraPerUserMonthly,
+  extraPerUserYearly,
+  getTeamsPrice,
+  numberInputConfig,
+  teamsPriceMonthly,
+  teamsPriceYearly,
+}: NonNullable<ReturnType<typeof initPricingPackages>>) => {
+  const monthlyToggle = getHtmlElement({
+    selector: "[teams-section=monthly-toggle]",
+    log: "error",
+  });
+  const yearlyToggle = getHtmlElement({
+    selector: "[teams-section=yearly-toggle]",
+    log: "error",
+  });
+  const extraPerUserPriceElements = getMultipleHtmlElements({
+    selector: "[teams-section=extra-user-price]",
+    log: "error",
+  });
+  const additionalCostElements = getMultipleHtmlElements({
+    selector: "[teams-section=additional-cost]",
+    log: "error",
+  });
+  const baseCostElements = getMultipleHtmlElements({
+    selector: "[teams-section=base-cost]",
+    log: "error",
+  });
+  const totalCostElements = getMultipleHtmlElements({
+    selector: "[teams-section=total-cost]",
+    log: "error",
+  });
+  const additionalUsersElements = getMultipleHtmlElements({
+    selector: "[teams-section=additional-users]",
+    log: "error",
+  });
+
+  const teamsPriceSaveElements = getMultipleHtmlElements({
+    selector: "[teams-section=teams-price-save]",
+    log: "error",
+  });
+
+  const monthlyOnlyElements =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=monthly-only-element]",
+      log: "error",
+    }) || [];
+
+  const yearlyOnlyElements =
+    getMultipleHtmlElements({
+      selector: "[pricing-package=yearly-only-element]",
+      log: "error",
+    }) || [];
+
+  if (
+    !monthlyToggle ||
+    !yearlyToggle ||
+    !extraPerUserPriceElements ||
+    !additionalCostElements ||
+    !baseCostElements ||
+    !totalCostElements ||
+    !additionalUsersElements ||
+    !teamsPriceSaveElements ||
+    !monthlyOnlyElements ||
+    !yearlyOnlyElements
+  ) {
+    console.error("Failed to initialize teams section");
+    return;
+  }
+
+  let isYearlyToggled = false;
+  let currentAdditionalUsers = 1;
+
+  const getCurrentUserNumber = () => {
+    return numberInputConfig.defaultValue + currentAdditionalUsers;
+  };
+
+  const getMonthlyPrices = () => {
+    const teamsPrice = getTeamsPrice({
+      basePrice: teamsPriceMonthly,
+      extraUserPrice: extraPerUserMonthly,
+      userNumber: getCurrentUserNumber(),
+    });
+    return {
+      baseCost: teamsPriceMonthly,
+      totalCost: teamsPrice.totalPrice,
+      additionalCost: teamsPrice.extraUsersPrice,
+    };
+  };
+
+  const getYearlyPrices = () => {
+    const teamsPrice = getTeamsPrice({
+      basePrice: teamsPriceYearly,
+      extraUserPrice: extraPerUserYearly,
+      userNumber: getCurrentUserNumber(),
+    });
+    return {
+      baseCost: teamsPriceYearly,
+      totalCost: teamsPrice.totalPrice,
+      additionalCost: teamsPrice.extraUsersPrice,
+    };
+  };
+
+  const updatePricesWithUI = () => {
+    const monthlyPrices = getMonthlyPrices();
+    if (isYearlyToggled) {
+      const yearlyPrices = getYearlyPrices();
+
+      const yearlySavings = (monthlyPrices.totalCost - yearlyPrices.totalCost) * 12;
+
+      additionalUsersElements.forEach((element) => {
+        element.textContent = `${currentAdditionalUsers}`;
+      });
+      additionalCostElements.forEach((element) => {
+        element.textContent = `${formatPrice(yearlyPrices.additionalCost)}`;
+      });
+      baseCostElements.forEach((element) => {
+        element.textContent = `${formatPrice(yearlyPrices.baseCost)}`;
+      });
+      totalCostElements.forEach((element) => {
+        element.textContent = `${formatPrice(yearlyPrices.totalCost)}`;
+      });
+      teamsPriceSaveElements.forEach((element) => {
+        element.textContent = `${formatPrice(yearlySavings)}`;
+      });
+
+      yearlyOnlyElements.forEach((element) => {
+        element.classList.remove("is-hidden");
+      });
+      monthlyOnlyElements.forEach((element) => {
+        element.classList.add("is-hidden");
+      });
+
+      extraPerUserPriceElements.forEach((element) => {
+        element.textContent = `${formatPrice(extraPerUserYearly)}`;
+      });
+
+      yearlyToggle.setAttribute("aria-checked", "true");
+      monthlyToggle.setAttribute("aria-checked", "false");
+      yearlyToggle.classList.add("is-active");
+      monthlyToggle.classList.remove("is-active");
+    } else {
+      additionalUsersElements.forEach((element) => {
+        element.textContent = `${currentAdditionalUsers}`;
+      });
+      additionalCostElements.forEach((element) => {
+        element.textContent = `${formatPrice(monthlyPrices.additionalCost)}`;
+      });
+      baseCostElements.forEach((element) => {
+        element.textContent = `${formatPrice(monthlyPrices.baseCost)}`;
+      });
+      totalCostElements.forEach((element) => {
+        element.textContent = `${formatPrice(monthlyPrices.totalCost)}`;
+      });
+      teamsPriceSaveElements.forEach((element) => {
+        element.textContent = `${formatPrice(0)}`;
+      });
+
+      extraPerUserPriceElements.forEach((element) => {
+        element.textContent = `${formatPrice(extraPerUserYearly)}`;
+      });
+
+      yearlyOnlyElements.forEach((element) => {
+        element.classList.add("is-hidden");
+      });
+      monthlyOnlyElements.forEach((element) => {
+        element.classList.remove("is-hidden");
+      });
+      yearlyToggle.setAttribute("aria-checked", "false");
+      monthlyToggle.setAttribute("aria-checked", "true");
+      yearlyToggle.classList.remove("is-active");
+      monthlyToggle.classList.add("is-active");
+    }
+  };
+
+  const handleAdditionalUserInputs = () => {
+    const additionalUserInputWrap = getHtmlElement<NumberInputElement>({
+      selector: "[number-input-id=teams-section]",
+      log: "error",
+    });
+
+    if (!additionalUserInputWrap) {
+      console.error("Failed to initialize user number input");
+      return;
+    }
+
+    additionalUserInputWrap.setValue(currentAdditionalUsers);
+
+    additionalUserInputWrap.onChange((newValue) => {
+      currentAdditionalUsers = newValue;
+
+      updatePricesWithUI();
+    });
+  };
+
+  const setupTimeToggles = () => {
+    monthlyToggle.addEventListener("click", () => {
+      isYearlyToggled = false;
+      updatePricesWithUI();
+    });
+    yearlyToggle.addEventListener("click", () => {
+      isYearlyToggled = true;
+      updatePricesWithUI();
+    });
+  };
+
+  // Initialize
+  setupTimeToggles();
+  handleAdditionalUserInputs();
+  updatePricesWithUI();
 };
 
 afterWebflowReady(() => {
-  initPricingPackages();
+  const pricingPackagesResult = initPricingPackages();
+
+  if (!pricingPackagesResult) {
+    console.error("Failed to initialize pricing packages");
+    return;
+  }
+
+  initTeamsSection(pricingPackagesResult);
 });
