@@ -3,13 +3,16 @@ import "./number-input";
 import { afterWebflowReady, getHtmlElement, getMultipleHtmlElements } from "@taj-wf/utils";
 
 import type { NumberInputElement } from "./number-input";
+import { initNumberInputs } from "./number-input";
 
 const formatPrice = (price: number): string => {
   // Math.round is used inside to prevent floating point inaccuracies (e.g. 0.29 * 100 = 28.999999999999996)
   const truncated = Math.trunc(Math.round(price * 10000) / 100) / 100;
+  const isInteger = Number.isInteger(truncated);
+
   return new Intl.NumberFormat("de-DE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: isInteger ? 0 : 2,
+    maximumFractionDigits: isInteger ? 0 : 2,
   }).format(truncated);
 };
 
@@ -219,6 +222,8 @@ const initPricingPackages = () => {
 
   initPricingPackageNumberInputs();
   initTeamsSectionNumberInputs();
+
+  initNumberInputs();
 
   const getTeamsPrice = ({
     basePrice,
@@ -435,13 +440,13 @@ const initTeamsSection = ({
 
   const monthlyOnlyElements =
     getMultipleHtmlElements({
-      selector: "[pricing-package=monthly-only-element]",
-      log: "error",
+      selector: "[teams-section=monthly-only-element]",
+      log: false,
     }) || [];
 
   const yearlyOnlyElements =
     getMultipleHtmlElements({
-      selector: "[pricing-package=yearly-only-element]",
+      selector: "[teams-section=yearly-only-element]",
       log: "error",
     }) || [];
 
@@ -550,7 +555,7 @@ const initTeamsSection = ({
       });
 
       extraPerUserPriceElements.forEach((element) => {
-        element.textContent = `${formatPrice(extraPerUserYearly)}`;
+        element.textContent = `${formatPrice(extraPerUserMonthly)}`;
       });
 
       yearlyOnlyElements.forEach((element) => {
@@ -598,6 +603,7 @@ const initTeamsSection = ({
   };
 
   // Initialize
+  isYearlyToggled = true;
   setupTimeToggles();
   handleAdditionalUserInputs();
   updatePricesWithUI();
