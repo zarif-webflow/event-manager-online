@@ -213,10 +213,10 @@ const initPricingPackages = () => {
     }
 
     numberInputWraps.forEach((wrap) => {
-      wrap.setAttribute("min", `1`);
+      wrap.setAttribute("min", `0`);
       wrap.setAttribute("max", `${numberInputConfig.max - numberInputConfig.defaultValue}`);
       wrap.setAttribute("step", `${numberInputConfig.step}`);
-      wrap.setAttribute("default-val", `1`);
+      wrap.setAttribute("default-val", `0`);
     });
   };
 
@@ -432,6 +432,10 @@ const initTeamsSection = ({
     selector: "[teams-section=additional-users]",
     log: "error",
   });
+  const includedUsersElements = getMultipleHtmlElements({
+    selector: "[teams-section=included-users]",
+    log: "error",
+  });
 
   const teamsPriceSaveElements = getMultipleHtmlElements({
     selector: "[teams-section=teams-price-save]",
@@ -460,14 +464,15 @@ const initTeamsSection = ({
     !additionalUsersElements ||
     !teamsPriceSaveElements ||
     !monthlyOnlyElements ||
-    !yearlyOnlyElements
+    !yearlyOnlyElements ||
+    !includedUsersElements
   ) {
     console.error("Failed to initialize teams section");
     return;
   }
 
   let isYearlyToggled = false;
-  let currentAdditionalUsers = 1;
+  let currentAdditionalUsers = 0;
 
   const getCurrentUserNumber = () => {
     return numberInputConfig.defaultValue + currentAdditionalUsers;
@@ -591,6 +596,12 @@ const initTeamsSection = ({
     });
   };
 
+  const initialUiSetup = () => {
+    includedUsersElements.forEach((element) => {
+      element.textContent = `${numberInputConfig.defaultValue}`;
+    });
+  };
+
   const setupTimeToggles = () => {
     monthlyToggle.addEventListener("click", () => {
       isYearlyToggled = false;
@@ -604,6 +615,7 @@ const initTeamsSection = ({
 
   // Initialize
   isYearlyToggled = true;
+  initialUiSetup();
   setupTimeToggles();
   handleAdditionalUserInputs();
   updatePricesWithUI();
